@@ -1,0 +1,19 @@
+<html>
+<head>
+    <title>Reversi</title>
+</head>
+<body>
+
+<div id="canvas_frame">
+    <canvas id="canvas" width="640" height="480"></canvas>
+</div>
+
+<script type="module">
+    import * as reversi from "./build/reversi.js";
+    window.reversi = reversi;
+    var app = new window.reversi.ReversiGame();
+    app.start()
+</script>
+
+</body>
+</html>
