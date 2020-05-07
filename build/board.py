@@ -132,7 +132,7 @@ class Board:
         return self._moves[0]
 
     def is_piece(self, x, y):
-        if x < 0 or x > 8 or y < 0 or y > 8:
+        if x is None or y is None or x < 0 or x > 8 or y < 0 or y > 8:
             return None
         return self._p[x][y]
 

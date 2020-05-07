@@ -1,4 +1,5 @@
 import eval_functions
+from bedlam import Button
 from bedlam import Game
 from bedlam import Scene
 from board import BLACK
@@ -15,7 +16,8 @@ BLACK_TO_MOVE_STATE = 'BLACK_TO_MOVE_STATE'
 GAME_OVER_STATE = 'GAME_OVER_STATE'
 THINK_TIME = 2 * 1000
 DISPLAY_TIME = 3 * 1000
-
+HIGHLIGHT_TIME = 1 * 1000
+DEBUG = True
 
 class ReversiScene(Scene):
     def __init__(self, game, name):
@@ -25,17 +27,24 @@ class ReversiScene(Scene):
         self.padding = 8
         self.px = 10
         self.py = 20
-        self.hoverX = None
-        self.hoverY = None
         self.eval_function = eval_functions.F1()
         self.game_state = WHITE_TO_MOVE_STATE
-        self.think_until = -1
-        self.display_until = -1
-        self.display = ''
-        self.consecutive_passes = 0
+        self._hoverX = None
+        self._hoverY = None
+        self._think_until = -1
+        self._display_until = -1
+        self._display = ''
+        self._consecutive_passes = 0
+        self._highlightX = 0
+        self._highlightY = 0
+        self._highlight_until = -1
+        r = 2 * self.radius + 2 * self.padding
+        self.reset_button = self.append(Button(self.game, 9 * r, 8 * r, 75, 30, 'Reset'))
+        self.reset_button.callback = self.__reset_game
 
     def set_current_board(self, board):
         self.current_board = board
+        self.game_state = WHITE_TO_MOVE_STATE
 
     def __find_cell(self, mouse_x, mouse_y):
         r = 2 * self.radius + 2 * self.padding
@@ -45,16 +54,27 @@ class ReversiScene(Scene):
             return None, None
         return x, y
 
-    def __handle_mouseup(self, event):
-        x, y = self.__find_cell(event.offsetX, event.offsetY)
-        console.log('click:  cell=' + x + ',' + y + '    ' + self.current_board.is_piece(x, y))
+    def __reset_game(self):
+        self.set_current_board(Board())
+
+    def handle_mouseup(self, event):
+        Scene.handle_mouseup(self, event)
+        x, y = self.__find_cell(event.x, event.y)
+        if DEBUG:
+            console.log('click:  cell=' + x + ',' + y + '    ' + self.current_board.is_piece(x, y))
         if self.game_state == WHITE_TO_MOVE_STATE:
             move = self.current_board.is_move(x, y)
+            if DEBUG:
+                self.__display_message(" " + x + "," + y)
             if move is not None:
                 self.__make_move(move)
 
-    def __handle_mousemove(self, event):
-        self.hoverX, self.hoverY = self.__find_cell(event.offsetX, event.offsetY)
+    def handle_mousemove(self, event):
+        Scene.handle_mousemove(self, event)
+        if self.game_state == WHITE_TO_MOVE_STATE:
+            self._hoverX, self._hoverY = self.__find_cell(event.x, event.y)
+        else:
+            self._hoverX, self._hoverY = None, None
 
     def __make_move(self, move):
         console.log('\n\n- - - - - - - - - - - - - \n')
@@ -62,15 +82,18 @@ class ReversiScene(Scene):
         if move is not None:
             console.log('Move = ' + move.x + ',' + move.y + '  : ' + move.player)
             self.current_board = Board(self.current_board, move)
-            self.consecutive_passes = 0
+            self._consecutive_passes = 0
+            self._highlightX = move.x
+            self._highlightY = move.y
+            self._highlight_until = self.game.get_time() + HIGHLIGHT_TIME
         else:
             console.log('PASS: ' + self.current_board.next_player())
             self.__display_message('PASS: ' + self.current_board.next_player())
             self.current_board.switch_player()
-            self.consecutive_passes = self.consecutive_passes + 1
+            self._consecutive_passes = self._consecutive_passes + 1
         self.game_state = BLACK_TO_MOVE_STATE if self.game_state == WHITE_TO_MOVE_STATE else WHITE_TO_MOVE_STATE
-        self.think_until = -1
-        if len(self.current_board) == 64 or self.consecutive_passes >= 2 \
+        self._think_until = -1
+        if len(self.current_board) == 64 or self._consecutive_passes >= 2 \
                 or self.current_board.count(WHITE) == 0 or self.current_board.count(BLACK) == 0:
             self.__display_message('Game over')
             self.game_state = GAME_OVER_STATE
@@ -79,8 +102,8 @@ class ReversiScene(Scene):
         console.log('- - - - - - - - - - - - - \n\n')
 
     def __display_message(self, message):
-        self.display_until = self.game.get_time() + DISPLAY_TIME
-        self.display = message
+        self._display_until = self.game.get_time() + DISPLAY_TIME
+        self._display = message
 
     def __draw_board(self, ctx):
         r = 2 * self.radius + 2 * self.padding
@@ -104,15 +127,21 @@ class ReversiScene(Scene):
                         continue
                     ctx.beginPath()
                     ctx.fillStyle = '#000000' if self.current_board.is_piece(x, y) == BLACK else '#CCCCCC'
-                    ctx.moveTo((x + 1) * r + self.radius - self.padding, (y + 1) * r)
-                    ctx.arc((x + 1) * r - self.padding, (y + 1) * r, self.radius, 0, 2 * Math.PI)
+                    ctx.arc((x + 1) * r - self.padding - 1, (y + 1) * r - 1, self.radius, 0, 2 * Math.PI)
                     ctx.fill()
-        if self.hoverX is not None and self.current_board.is_move(self.hoverX, self.hoverY):
+        if self._hoverX is not None and self.current_board.is_move(self._hoverX, self._hoverY):
             ctx.strokeStyle = '#CCCCCC'
             ctx.beginPath()
-            ctx.moveTo((self.hoverX + 1) * r + self.radius - self.padding, (self.hoverY + 1) * r)
-            ctx.arc((self.hoverX + 1) * r - self.padding, (self.hoverY + 1) * r, self.radius, 0, 2 * Math.PI)
+            ctx.moveTo((self._hoverX + 1) * r + self.radius - self.padding, (self._hoverY + 1) * r)
+            ctx.arc((self._hoverX + 1) * r - self.padding, (self._hoverY + 1) * r, self.radius, 0, 2 * Math.PI)
             ctx.stroke()
+        if self._highlight_until > 0:
+            ctx.strokeStyle = '#999999'
+            ctx.strokeRect(1 + self.px + self._highlightX * r + self.radius - self.padding,
+                           1 + self.py + self._highlightY * r + self.radius - self.padding,
+                           r - self.padding - 2, r - self.padding - 2)
+            if self.game.get_time() > self._highlight_until:
+                self._highlight_until = -1
         ctx.fillStyle = 'green'
         ctx.fillRect(self.px, self.py, self.px + bsize, self.py + bsize)
         ctx.fillStyle = 'black'
@@ -131,10 +160,10 @@ class ReversiScene(Scene):
         else:
             ctx.fillText(self.current_board.next_player() + ' to play', tx, ty)
         ty = ty + 32
-        if self.display_until > 0:
-            ctx.fillText(self.display, tx, ty)
-            if self.game.get_time() > self.display_until:
-                self.display_until = -1
+        if self._display_until > 0:
+            ctx.fillText(self._display, tx, ty)
+            if self.game.get_time() > self._display_until:
+                self._display_until = -1
         ctx.restore()
 
     def draw(self, ctx):
@@ -144,9 +173,9 @@ class ReversiScene(Scene):
     def update(self, delta_time):
         Scene.update(self, delta_time)
         if self.game_state == BLACK_TO_MOVE_STATE:
-            if self.think_until < 0:
-                self.think_until = self.game.get_time() + THINK_TIME
-            if self.game.get_time() < self.think_until:
+            if self._think_until < 0:
+                self._think_until = self.game.get_time() + THINK_TIME
+            if self.game.get_time() < self._think_until:
                 self.__search(self.current_board)
                 return
             if self.current_board.move_count() == 0:
