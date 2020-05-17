@@ -14,15 +14,19 @@ document = window = Math = Date = console = 0  # Prevent complaints by optional 
 WHITE_TO_MOVE_STATE = 'WHITE_TO_MOVE_STATE'
 BLACK_TO_MOVE_STATE = 'BLACK_TO_MOVE_STATE'
 GAME_OVER_STATE = 'GAME_OVER_STATE'
+MIN_SCORE = -1000000
+MAX_SCORE = 1000000
 THINK_TIME = 2 * 1000
 DISPLAY_TIME = 3 * 1000
 HIGHLIGHT_TIME = 1 * 1000
-DEBUG = True
+DEBUG = False
+
 
 class ReversiScene(Scene):
     def __init__(self, game, name):
         Scene.__init__(self, game, name)
         self.current_board = None
+        self.target_depth = 2
         self.radius = 20
         self.padding = 8
         self.px = 10
@@ -77,17 +81,20 @@ class ReversiScene(Scene):
             self._hoverX, self._hoverY = None, None
 
     def __make_move(self, move):
-        console.log('\n\n- - - - - - - - - - - - - \n')
-        console.log(self.current_board.show())
+        if DEBUG:
+            console.log('\n\n- - - - - - - - - - - - - \n')
+            console.log(self.current_board.show())
         if move is not None:
-            console.log('Move = ' + move.x + ',' + move.y + '  : ' + move.player)
+            if DEBUG:
+                console.log('Move = ' + move.x + ',' + move.y + '  : ' + move.player)
             self.current_board = Board(self.current_board, move)
             self._consecutive_passes = 0
             self._highlightX = move.x
             self._highlightY = move.y
             self._highlight_until = self.game.get_time() + HIGHLIGHT_TIME
         else:
-            console.log('PASS: ' + self.current_board.next_player())
+            if DEBUG:
+                console.log('PASS: ' + self.current_board.next_player())
             self.__display_message('PASS: ' + self.current_board.next_player())
             self.current_board.switch_player()
             self._consecutive_passes = self._consecutive_passes + 1
@@ -97,9 +104,10 @@ class ReversiScene(Scene):
                 or self.current_board.count(WHITE) == 0 or self.current_board.count(BLACK) == 0:
             self.__display_message('Game over')
             self.game_state = GAME_OVER_STATE
-        console.log(self.current_board.show())
-        console.log('State = ' + self.game_state)
-        console.log('- - - - - - - - - - - - - \n\n')
+        if DEBUG:
+            console.log(self.current_board.show())
+            console.log('State = ' + self.game_state)
+            console.log('- - - - - - - - - - - - - \n\n')
 
     def __display_message(self, message):
         self._display_until = self.game.get_time() + DISPLAY_TIME
@@ -109,6 +117,9 @@ class ReversiScene(Scene):
         r = 2 * self.radius + 2 * self.padding
         bsize = 8 * r + self.padding
         ctx.save()
+        ctx.globalCompositeOperation = 'source-over'
+        ctx.fillStyle = 'green'
+        ctx.fillRect(self.px, self.py, self.px + bsize, self.py + bsize)
         ctx.strokeStyle = '#666666'
         ctx.lineWidth = 1
         ctx.beginPath()
@@ -142,8 +153,6 @@ class ReversiScene(Scene):
                            r - self.padding - 2, r - self.padding - 2)
             if self.game.get_time() > self._highlight_until:
                 self._highlight_until = -1
-        ctx.fillStyle = 'green'
-        ctx.fillRect(self.px, self.py, self.px + bsize, self.py + bsize)
         ctx.fillStyle = 'black'
         ctx.font = '18pt sans-serif'
         tx = self.px + bsize + 20
@@ -176,24 +185,43 @@ class ReversiScene(Scene):
             if self._think_until < 0:
                 self._think_until = self.game.get_time() + THINK_TIME
             if self.game.get_time() < self._think_until:
-                self.__search(self.current_board)
+                self.__search_for_best_move(self.current_board)
                 return
             if self.current_board.move_count() == 0:
                 self.__make_move(None)
                 return
-            best_move = self.__search(self.current_board)
+            best_move = self.__search_for_best_move(self.current_board)
             if best_move is not None:
                 self.__make_move(best_move)
 
-    def __search(self, board):
-        move = board.next_pending_move()
+    def __search_for_best_move(self, board):
+        move = board.next_pending_move(self.target_depth)
         if move is not None:
             if move.board is None:
                 move.board = Board(self.current_board, move)
-            self.eval_function.eval_move(move.board, move)
+            move.score = self.__search(move.board, self.target_depth)
+            move.score_depth = self.target_depth
             return None
         else:
             return board.best_move()
+
+    def __search(self, board, depth=0, alpha=MIN_SCORE, beta=MAX_SCORE):
+        if depth <= 0:
+            return self.eval_function.eval_board(board)
+        if board.move_count() == 0:
+            b = Board(board)
+            b.switch_player()
+            return self.__search(b, depth - 1)
+        score = MIN_SCORE if board.next_player() == WHITE else MAX_SCORE
+        for move in board.get_moves():
+            move.score = self.__search(Board(board, move), depth - 1, alpha, beta)
+            score = max(score, move.score) if board.next_player() == WHITE else min(score, move.score)
+            alpha = max(alpha, move.score) if board.next_player() == WHITE else alpha
+            beta = min(beta, move.score) if board.next_player() == BLACK else beta
+            if alpha >= beta:
+                break
+        board.sort_moves()
+        return score
 
 
 class ReversiGame(Game):

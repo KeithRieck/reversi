@@ -8,6 +8,17 @@ document = window = Math = Date = console = 0  # Prevent complaints by optional 
 # __pragma__('noalias', 'clear')
 
 
+def _in_browser():
+    return document != 0
+
+
+def _hash_name(obj):
+    if _in_browser():
+        return str(obj)
+    else:
+        return hash(obj)
+
+
 class GameObject:
     """
     Abstract base class for all objects that can be drawn on a Game canvas.
@@ -23,13 +34,6 @@ class GameObject:
 
     def draw(self, ctx):
         pass
-
-
-def _hash_name(obj):
-    if document == 0:
-        return hash(obj)
-    else:
-        return str(obj)
 
 
 class Button(GameObject):
@@ -186,7 +190,7 @@ class Game:
 
     def __init__(self, name=None, loop_time=20):
         self.name = name if name is not None else _hash_name(self)
-        if document != 0:
+        if _in_browser():
             self.canvasFrame = document.getElementById('canvas_frame')
             self.canvas = document.getElementById('canvas')
             self._prev_time = self.get_time()
