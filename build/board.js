@@ -1,4 +1,4 @@
-// Transcrypt'ed from Python, 2020-05-06 21:28:21
+// Transcrypt'ed from Python, 2020-05-17 15:44:29
 import {AssertionError, AttributeError, BaseException, DeprecationWarning, Exception, IndexError, IterableError, KeyError, NotImplementedError, RuntimeWarning, StopIteration, UserWarning, ValueError, Warning, __JsIterator__, __PyIterator__, __Terminal__, __add__, __and__, __call__, __class__, __envir__, __eq__, __floordiv__, __ge__, __get__, __getcm__, __getitem__, __getslice__, __getsm__, __gt__, __i__, __iadd__, __iand__, __idiv__, __ijsmod__, __ilshift__, __imatmul__, __imod__, __imul__, __in__, __init__, __ior__, __ipow__, __irshift__, __isub__, __ixor__, __jsUsePyNext__, __jsmod__, __k__, __kwargtrans__, __le__, __lshift__, __lt__, __matmul__, __mergefields__, __mergekwargtrans__, __mod__, __mul__, __ne__, __neg__, __nest__, __or__, __pow__, __pragma__, __proxy__, __pyUseJsNext__, __rshift__, __setitem__, __setproperty__, __setslice__, __sort__, __specialattrib__, __sub__, __super__, __t__, __terminal__, __truediv__, __withblock__, __xor__, abs, all, any, assert, bool, bytearray, bytes, callable, chr, copy, deepcopy, delattr, dict, dir, divmod, enumerate, filter, float, getattr, hasattr, input, int, isinstance, issubclass, len, list, map, max, min, object, ord, pow, print, property, py_TypeError, py_iter, py_metatype, py_next, py_reversed, py_typeof, range, repr, round, set, setattr, sorted, str, sum, tuple, zip} from './org.transcrypt.__runtime__.js';
 var __name__ = 'board';
 export var BLACK = 'BLACK';
@@ -28,14 +28,18 @@ export var Move =  __class__ ('Move', [object], {
 });
 export var Board =  __class__ ('Board', [object], {
 	__module__: __name__,
-	get __init__ () {return __get__ (this, function (self, previous_board, move) {
+	get __init__ () {return __get__ (this, function (self, previous_board, move, csv) {
 		if (typeof previous_board == 'undefined' || (previous_board != null && previous_board.hasOwnProperty ("__kwargtrans__"))) {;
 			var previous_board = null;
 		};
 		if (typeof move == 'undefined' || (move != null && move.hasOwnProperty ("__kwargtrans__"))) {;
 			var move = null;
 		};
+		if (typeof csv == 'undefined' || (csv != null && csv.hasOwnProperty ("__kwargtrans__"))) {;
+			var csv = null;
+		};
 		self._player = WHITE;
+		self.move_number = 1;
 		self._p = [];
 		self._r = [];
 		self._moves = [];
@@ -47,11 +51,25 @@ export var Board =  __class__ ('Board', [object], {
 				self._r [x].append (false);
 			}
 		}
-		if (previous_board === null) {
+		if (csv !== null) {
+			var f = csv.py_split (',');
+			self.move_number = int (f [1]);
+			self._player = (f [2] == 'W' ? WHITE : BLACK);
+			var n = 2;
+			for (var y = 0; y < 8; y++) {
+				for (var x = 0; x < 8; x++) {
+					var n = n + 1;
+					self._p [x] [y] = (f [n] == 'W' ? WHITE : (f [n] == 'B' ? BLACK : null));
+				}
+			}
+			self._calc_perm ();
+		}
+		else if (previous_board === null) {
 			self._p [3] [3] = WHITE;
 			self._p [4] [3] = BLACK;
 			self._p [3] [4] = BLACK;
 			self._p [4] [4] = WHITE;
+			self._calc_perm ();
 		}
 		else {
 			for (var x = 0; x < 8; x++) {
@@ -63,6 +81,7 @@ export var Board =  __class__ ('Board', [object], {
 				self._player = move.player;
 				self.apply_move (move);
 			}
+			self.move_number = previous_board.move_number + 1;
 		}
 		self.__calculate_moves ();
 	});},
@@ -91,6 +110,22 @@ export var Board =  __class__ ('Board', [object], {
 		}
 		return __mod__ ("Board(%s, '%s')", tuple ([self._player, s]));
 	});},
+	get __hash__ () {return __get__ (this, function (self) {
+		var h = (self._player == WHITE ? 0 : 1);
+		var m = 1;
+		for (var y = 0; y < 8; y++) {
+			for (var x = 0; x < 8; x++) {
+				var m = __mod__ (m * 2, 4294967296);
+				if (self._p [x] [y] == BLACK) {
+					var h = __mod__ (h + m, 4294967296);
+				}
+				if (self._p [x] [__mod__ (y + 4, 8)] == WHITE) {
+					var h = __mod__ (h + m, 4294967296);
+				}
+			}
+		}
+		return h;
+	});},
 	get _board_char () {return __get__ (this, function (self, x, y) {
 		if (self._p [x] [y] === null) {
 			return (self.is_move (x, y) ? '*' : '.');
@@ -116,6 +151,12 @@ export var Board =  __class__ ('Board', [object], {
 	});},
 	get move_count () {return __get__ (this, function (self) {
 		return len (self._moves);
+	});},
+	get get_move () {return __get__ (this, function (self, n) {
+		return self._moves [n];
+	});},
+	get get_moves () {return __get__ (this, function (self) {
+		return self._moves;
 	});},
 	get apply_move () {return __get__ (this, function (self, move) {
 		self._p [move.x] [move.y] = move.player;
@@ -161,10 +202,13 @@ export var Board =  __class__ ('Board', [object], {
 		if (len (self._moves) == 0) {
 			return null;
 		}
+		self.sort_moves ();
+		return self._moves [0];
+	});},
+	get sort_moves () {return __get__ (this, function (self) {
 		self._moves.py_sort (__kwargtrans__ ({key: (function __lambda__ (m) {
 			return m.score;
 		})}));
-		return self._moves [0];
 	});},
 	get is_piece () {return __get__ (this, function (self, x, y) {
 		if (x === null || y === null || x < 0 || x > 8 || y < 0 || y > 8) {
@@ -189,6 +233,7 @@ export var Board =  __class__ ('Board', [object], {
 	get switch_player () {return __get__ (this, function (self) {
 		self._player = (self._player == WHITE ? BLACK : WHITE);
 		self.__calculate_moves ();
+		self._calc_perm ();
 		return self._player;
 	});},
 	get show () {return __get__ (this, function (self) {
@@ -206,9 +251,30 @@ export var Board =  __class__ ('Board', [object], {
 			else if (y == 2) {
 				var s = (s + '\t ') + str (self._player);
 			}
+			else if (y == 3) {
+				var s = (s + '\t ') + str (self.move_number);
+			}
 			print (s);
 		}
 		print ();
+	});},
+	get csv_line () {return __get__ (this, function (self) {
+		var s = ((str (self.__hash__ ()) + ',') + str (self.move_number)) + ',';
+		var s = (s + (self._player == WHITE ? 'W' : 'B')) + ',';
+		for (var y = 0; y < 8; y++) {
+			for (var x = 0; x < 8; x++) {
+				if (self._p [x] [y] == WHITE) {
+					var s = s + 'W,';
+				}
+				else if (self._p [x] [y] == BLACK) {
+					var s = s + 'B,';
+				}
+				else {
+					var s = s + ',';
+				}
+			}
+		}
+		return s;
 	});},
 	get _calc_perm () {return __get__ (this, function (self) {
 		for (var n = 0; n < 8; n++) {

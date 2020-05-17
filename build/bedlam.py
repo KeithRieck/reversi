@@ -8,6 +8,17 @@ document = window = Math = Date = console = 0  # Prevent complaints by optional 
 # __pragma__('noalias', 'clear')
 
 
+def _in_browser():
+    return document != 0
+
+
+def _hash_name(obj):
+    if _in_browser():
+        return str(obj)
+    else:
+        return hash(obj)
+
+
 class GameObject:
     """
     Abstract base class for all objects that can be drawn on a Game canvas.
@@ -15,6 +26,8 @@ class GameObject:
 
     def __init__(self, game):
         self.game = game
+        self.enabled = True
+        self.name = None
 
     def update(self, delta_time):
         pass
@@ -24,14 +37,18 @@ class GameObject:
 
 
 class Button(GameObject):
-    def __init__(self, game, x, y, width, height, label):
+    """
+    Button on a Scene that can execute a callback function.
+    """
+    def __init__(self, game, x, y, width, height, buttonText, name=None):
         GameObject.__init__(self, game)
+        self.name = name if name is not None else _hash_name(self)
         self.x = x
         self.y = y
         self.width = width
         self.height = height
         self.pad = 5
-        self.label = label
+        self.buttonText = buttonText
         self.font = '18pt sans-serif'
         self.fillStyle = 'white'
         self.textStyle = 'black'
@@ -39,11 +56,11 @@ class Button(GameObject):
         self.disabledStyle = 'gray'
         self.lineWidth = 2
         self.callback = None
-        self.enabled = True
         self._clicked = False
 
     def __repr__(self):
-        return "Button(%r,%r, %r,%r, '%s')" % (self.x, self.y, self.width, self.height, self.label)
+        return "Button(%s,%r,%r, %r,%r, '%s', '%s')" \
+               % (self.game, self.x, self.y, self.width, self.height, self.buttonText, self.name)
 
     def _in_rect(self, x, y):
         return not (x < self.x or x > self.x + self.width
@@ -63,10 +80,7 @@ class Button(GameObject):
 
     def draw(self, ctx):
         ctx.save()
-        ctx.font = self.font
-        ctx.fillStyle = self.textStyle if not self._clicked else self.fillStyle
-        ctx.fillStyle = ctx.fillStyle if self.enabled else self.disabledStyle
-        ctx.fillText(self.label, self.x + self.pad, self.y + self.height - self.pad)
+        ctx.globalCompositeOperation = 'source-over'
         ctx.beginPath()
         ctx.fillStyle = self.fillStyle if not self._clicked else self.textStyle
         ctx.strokeStyle = self.strokeStyle if self.enabled else self.disabledStyle
@@ -74,6 +88,10 @@ class Button(GameObject):
         ctx.rect(self.x, self.y, self.width, self.height)
         ctx.stroke()
         ctx.fillRect(self.x, self.y, self.width, self.height)
+        ctx.font = self.font
+        ctx.fillStyle = self.textStyle if not self._clicked else self.fillStyle
+        ctx.fillStyle = ctx.fillStyle if self.enabled else self.disabledStyle
+        ctx.fillText(self.buttonText, self.x + self.pad, self.y + self.height - self.pad)
         ctx.restore()
 
 
@@ -85,14 +103,14 @@ class Sprite(GameObject):
 
     def __init__(self, game, width, height, name=None):
         GameObject.__init__(self, game)
+        self.name = name if name is not None else _hash_name(self)
         self.x = 0
         self.y = 0
         self.width = width
         self.height = height
-        self.name = name if name is not None else str(self)
 
     def __repr__(self):
-        return "Sprite(%r,%r, '%s')" % (self.width, self.height, self.name)
+        return "Sprite(%s, %r,%r, '%s')" % (self.game, self.width, self.height, self.name)
 
     def update(self, delta_time):
         pass
@@ -109,28 +127,33 @@ class Scene(GameObject):
 
     def __init__(self, game, name=None):
         GameObject.__init__(self, game)
+        self.name = name if name is not None else _hash_name(self)
         self.children = []
-        self.buttons = []
-        self.name = name if name is not None else str(self)
 
     def __repr__(self):
-        return "Scene('%s')" % self.name
+        return "Scene(%s, '%s')" % (self.game, self.name)
 
     def __len__(self):
         return len(self.children)
 
-    def __getitem__(self, n):
-        return self.children[n]
+    def __getitem__(self, key):
+        return self.children[key]
 
-    def __setitem__(self, n, sprite):
-        self.children[n] = sprite
+    def __setitem__(self, key, gameobject):
+        self.children[key] = gameobject
+
+    def __contains__(self, gameobject):
+        return gameobject in self.children
+
+    def __iter__(self):
+        yield from self.children
 
     def handle_mousedown(self, event):
-        for button in self.buttons:
+        for button in (gameobject for gameobject in self.children if isinstance(gameobject, Button)):
             button.handle_mousedown(event)
 
     def handle_mouseup(self, event):
-        for button in self.buttons:
+        for button in (gameobject for gameobject in self.children if isinstance(gameobject, Button)):
             button.handle_mouseup(event)
 
     def handle_mousemove(self, event):
@@ -139,29 +162,24 @@ class Scene(GameObject):
     def handle_keydown(self, event):
         pass
 
-    def append(self, obj):
-        if isinstance(obj, Button):
-            self.buttons.append(obj)
-        if isinstance(obj, Sprite):
-            self.children.append(obj)
-        return obj
+    def append(self, gameobject):
+        self.children.append(gameobject)
+        return gameobject
 
     def update(self, delta_time):
-        for sprite in self.children:
-            sprite.update(delta_time)
-        for button in self.buttons:
-            button.update(delta_time)
+        for gameobject in self.children:
+            gameobject.update(delta_time)
 
     def _clear_screen(self, ctx):
+        ctx.save()
         ctx.globalCompositeOperation = 'destination-over'
         ctx.clearRect(0, 0, self.game.canvas.width, self.game.canvas.height)
+        ctx.restore()
 
     def draw(self, ctx):
         self._clear_screen(ctx)
-        for sprite in self.children:
-            sprite.draw(ctx)
-        for button in self.buttons:
-            button.draw(ctx)
+        for gameobject in self.children:
+            gameobject.draw(ctx)
 
 
 class Game:
@@ -171,13 +189,18 @@ class Game:
     """
 
     def __init__(self, name=None, loop_time=20):
-        self.name = name if name is not None else str(self)
-        self.canvasFrame = document.getElementById('canvas_frame')
-        self.canvas = document.getElementById('canvas')
+        self.name = name if name is not None else _hash_name(self)
+        if _in_browser():
+            self.canvasFrame = document.getElementById('canvas_frame')
+            self.canvas = document.getElementById('canvas')
+            self._prev_time = self.get_time()
+            self.__get_context().globalCompositeOperation = 'source-over'
+        else:
+            self.canvasFrame = None
+            self.canvas = None
         self.scenes = {}
         self.currentScene = None
         self._loop_time = loop_time
-        self._prev_time = self.get_time()
 
     def __get_context(self):
         return self.canvas.getContext('2d')
@@ -196,7 +219,7 @@ class Game:
         if self.currentScene is None:
             self.currentScene = scene
 
-    def _prep_event(self, event):
+    def _preprocess_event(self, event):
         if event.x:
             return event.x, event.y
         if event.layerX:
@@ -208,17 +231,17 @@ class Game:
         return event.x, event.y
 
     def handle_mousedown(self, event):
-        self._prep_event(event)
+        self._preprocess_event(event)
         if self.currentScene is not None:
             self.currentScene.handle_mousedown(event)
 
     def handle_mouseup(self, event):
-        self._prep_event(event)
+        self._preprocess_event(event)
         if self.currentScene is not None:
             self.currentScene.handle_mouseup(event)
 
     def handle_mousemove(self, event):
-        self._prep_event(event)
+        self._preprocess_event(event)
         if self.currentScene is not None:
             self.currentScene.handle_mousemove(event)
 
