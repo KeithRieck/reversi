@@ -2,8 +2,6 @@ BLACK = "BLACK"
 WHITE = "WHITE"
 
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
 class Move:
 
     def __init__(self, player=WHITE, x=0, y=0):
@@ -18,13 +16,11 @@ class Move:
         return 'Move(%s, %r, %r)' % (self.player, self.x, self.y)
 
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-
 class Board:
 
-    def __init__(self, previous_board=None, move=None):
+    def __init__(self, previous_board=None, move=None, csv=None):
         self._player = WHITE
+        self.move_number = 1
         self._p = []
         self._r = []
         self._moves = []
@@ -34,11 +30,22 @@ class Board:
             for y in range(8):
                 self._p[x].append(None)
                 self._r[x].append(False)
-        if previous_board is None:
+        if csv is not None:
+            f = csv.split(',')
+            self.move_number = int(f[1])
+            self._player = WHITE if f[2] == 'W' else BLACK
+            n = 2
+            for y in range(8):
+                for x in range(8):
+                    n = n + 1
+                    self._p[x][y] = WHITE if f[n] == 'W' else (BLACK if f[n] == 'B' else None)
+            self._calc_perm()
+        elif previous_board is None:
             self._p[3][3] = WHITE
             self._p[4][3] = BLACK
             self._p[3][4] = BLACK
             self._p[4][4] = WHITE
+            self._calc_perm()
         else:
             for x in range(8):
                 for y in range(8):
@@ -46,6 +53,7 @@ class Board:
             if move is not None:
                 self._player = move.player
                 self.apply_move(move)
+            self.move_number = previous_board.move_number + 1
         self.__calculate_moves()
 
     def __calculate_moves(self):
@@ -73,6 +81,18 @@ class Board:
                 s = s + self._board_char(x, y)
         return "Board(%s, '%s')" % (self._player, s)
 
+    def __hash__(self):
+        h = 0 if self._player == WHITE else 1
+        m = 1
+        for y in range(8):
+            for x in range(8):
+                m = (m * 2) % 4294967296
+                if self._p[x][y] == BLACK:
+                    h = (h + m) % 4294967296
+                if self._p[x][(y + 4) % 8] == WHITE:
+                    h = (h + m) % 4294967296
+        return h
+
     def _board_char(self, x, y):
         if self._p[x][y] is None:
             return '*' if self.is_move(x, y) else '.'
@@ -93,6 +113,12 @@ class Board:
 
     def move_count(self):
         return len(self._moves)
+
+    def get_move(self, n):
+        return self._moves[n]
+
+    def get_moves(self):
+        return self._moves
 
     def apply_move(self, move):
         self._p[move.x][move.y] = move.player
@@ -128,8 +154,11 @@ class Board:
     def best_move(self):
         if len(self._moves) == 0:
             return None
-        self._moves.sort(key=lambda m: m.score)
+        self.sort_moves()
         return self._moves[0]
+
+    def sort_moves(self):
+        self._moves.sort(key=lambda m: m.score)
 
     def is_piece(self, x, y):
         if x is None or y is None or x < 0 or x > 8 or y < 0 or y > 8:
@@ -150,6 +179,7 @@ class Board:
     def switch_player(self):
         self._player = BLACK if self._player == WHITE else WHITE
         self.__calculate_moves()
+        self._calc_perm()
         return self._player
 
     def show(self):
@@ -163,8 +193,23 @@ class Board:
                 s = s + '\t B: ' + str(self.count(BLACK))
             elif y == 2:
                 s = s + '\t ' + str(self._player)
+            elif y == 3:
+                s = s + '\t ' + str(self.move_number)
             print(s)
         print()
+
+    def csv_line(self):
+        s = str(self.__hash__()) + ',' + str(self.move_number) + ','
+        s = s + ('W' if self._player == WHITE else 'B') + ','
+        for y in range(8):
+            for x in range(8):
+                if self._p[x][y] == WHITE:
+                    s = s + 'W,'
+                elif self._p[x][y] == BLACK:
+                    s = s + 'B,'
+                else:
+                    s = s + ','
+        return s
 
     def _calc_perm(self):
         for n in range(8):

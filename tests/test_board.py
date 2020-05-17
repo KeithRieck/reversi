@@ -356,7 +356,7 @@ class BoardTestCase(unittest.TestCase):
         self.assertEqual(2, b0._moves[2].score)
         self.assertEqual(3, b0._moves[3].score)
 
-    def test_moves(self):
+    def test_moves_1(self):
         b1 = Board()
         b1._moves = []
         b1._p[7][0] = WHITE
@@ -384,6 +384,103 @@ class BoardTestCase(unittest.TestCase):
         b2 = Board(b1, Move(WHITE, 2, 5))
         print(b2.show())
         self.assertEqual(6, len(b2._moves))
+
+    def test_moves_2(self):
+        b1 = Board()
+        b1._moves = []
+        b1._p[0][0] = WHITE
+        b1._p[1][0] = None
+        b1._p[2][0] = WHITE
+        b1._p[3][0] = BLACK
+        b1._p[4][0] = WHITE
+        b1._p[5][0] = WHITE
+        b1._p[6][0] = WHITE
+        b1._p[7][0] = WHITE
+        b1._p[0][1] = BLACK
+        b1._p[1][1] = WHITE
+        b1._p[2][1] = WHITE
+        b1._p[3][1] = BLACK
+        b1._p[4][1] = BLACK
+        b1._p[5][1] = BLACK
+        b1._p[6][1] = WHITE
+        b1._p[7][1] = WHITE
+        b1._p[0][2] = WHITE
+        b1._p[1][2] = WHITE
+        b1._p[2][2] = WHITE
+        b1._p[3][2] = BLACK
+        b1._p[4][2] = BLACK
+        b1._p[5][2] = BLACK
+        b1._p[6][2] = BLACK
+        b1._p[7][2] = WHITE
+        b1._p[0][3] = WHITE
+        b1._p[1][3] = WHITE
+        b1._p[2][3] = BLACK
+        b1._p[3][3] = WHITE
+        b1._p[4][3] = WHITE
+        b1._p[5][3] = WHITE
+        b1._p[6][3] = BLACK
+        b1._p[7][3] = WHITE
+        b1._p[0][4] = WHITE
+        b1._p[1][4] = WHITE
+        b1._p[2][4] = WHITE
+        b1._p[3][4] = WHITE
+        b1._p[4][4] = WHITE
+        b1._p[5][4] = WHITE
+        b1._p[6][4] = WHITE
+        b1._p[7][4] = WHITE
+        b1._p[0][5] = WHITE
+        b1._p[1][5] = WHITE
+        b1._p[2][5] = WHITE
+        b1._p[3][5] = WHITE
+        b1._p[4][5] = BLACK
+        b1._p[5][5] = BLACK
+        b1._p[6][5] = WHITE
+        b1._p[7][5] = WHITE
+        b1._p[0][6] = WHITE
+        b1._p[1][6] = WHITE
+        b1._p[2][6] = WHITE
+        b1._p[3][6] = WHITE
+        b1._p[4][6] = WHITE
+        b1._p[5][6] = WHITE
+        b1._p[6][6] = WHITE
+        b1._p[7][6] = WHITE
+        b1._p[0][7] = WHITE
+        b1._p[1][7] = WHITE
+        b1._p[2][7] = WHITE
+        b1._p[3][7] = WHITE
+        b1._p[4][7] = WHITE
+        b1._p[5][7] = WHITE
+        b1._p[6][7] = WHITE
+        b1._p[7][7] = WHITE
+        b1.switch_player()
+        b1.switch_player()
+        print(b1.show())
+
+        self.assertEqual(0, len(b1._moves))
+
+    def test_csv(self):
+        b1 = Board()
+        csv1 = b1.csv_line()
+        b1a = Board(csv=csv1)
+        self.assertEqual(b1.__hash__(), b1a.__hash__())
+
+        m2 = Move(WHITE, 4, 2)
+        b2 = Board(b1, m2)
+        csv2 = b2.csv_line()
+        b2a = Board(csv=csv2)
+        self.assertEqual(b2.__hash__(), b2a.__hash__())
+
+        b3 = Board(b1, Move(WHITE, 2, 4))
+        b3 = Board(b3, Move(BLACK, 2, 5))
+        b3 = Board(b3, Move(WHITE, 5, 3))
+        b3 = Board(b3, Move(BLACK, 5, 2))
+        b3 = Board(b3, Move(WHITE, 4, 2))
+        b3 = Board(b3, Move(BLACK, 5, 4))
+        b3 = Board(b3, Move(WHITE, 6, 3))
+        b3 = Board(b3, Move(BLACK, 3, 2))
+        csv3 = b3.csv_line()
+        b3a = Board(csv=csv3)
+        self.assertEqual(b3.__hash__(), b3a.__hash__())
 
 
 if __name__ == '__main__':
