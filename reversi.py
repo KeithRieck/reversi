@@ -19,7 +19,7 @@ MAX_SCORE = 1000000
 THINK_TIME = 2 * 1000
 DISPLAY_TIME = 3 * 1000
 HIGHLIGHT_TIME = 1 * 1000
-DEBUG = True
+DEBUG = False
 
 
 class ReversiScene(Scene):
