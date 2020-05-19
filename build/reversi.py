@@ -19,7 +19,7 @@ MAX_SCORE = 1000000
 THINK_TIME = 2 * 1000
 DISPLAY_TIME = 3 * 1000
 HIGHLIGHT_TIME = 1 * 1000
-DEBUG = False
+DEBUG = True
 
 
 class ReversiScene(Scene):
@@ -31,7 +31,7 @@ class ReversiScene(Scene):
         self.padding = 8
         self.px = 10
         self.py = 20
-        self.eval_function = eval_functions.F1()
+        self.eval_function = eval_functions.F1(1, 10, 10, -10, -10, 100)
         self.game_state = WHITE_TO_MOVE_STATE
         self._hoverX = None
         self._hoverY = None

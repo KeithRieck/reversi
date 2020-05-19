@@ -1,4 +1,4 @@
-// Transcrypt'ed from Python, 2020-05-17 15:44:29
+// Transcrypt'ed from Python, 2020-05-18 19:00:44
 var eval_functions = {};
 import {AssertionError, AttributeError, BaseException, DeprecationWarning, Exception, IndexError, IterableError, KeyError, NotImplementedError, RuntimeWarning, StopIteration, UserWarning, ValueError, Warning, __JsIterator__, __PyIterator__, __Terminal__, __add__, __and__, __call__, __class__, __envir__, __eq__, __floordiv__, __ge__, __get__, __getcm__, __getitem__, __getslice__, __getsm__, __gt__, __i__, __iadd__, __iand__, __idiv__, __ijsmod__, __ilshift__, __imatmul__, __imod__, __imul__, __in__, __init__, __ior__, __ipow__, __irshift__, __isub__, __ixor__, __jsUsePyNext__, __jsmod__, __k__, __kwargtrans__, __le__, __lshift__, __lt__, __matmul__, __mergefields__, __mergekwargtrans__, __mod__, __mul__, __ne__, __neg__, __nest__, __or__, __pow__, __pragma__, __proxy__, __pyUseJsNext__, __rshift__, __setitem__, __setproperty__, __setslice__, __sort__, __specialattrib__, __sub__, __super__, __t__, __terminal__, __truediv__, __withblock__, __xor__, abs, all, any, assert, bool, bytearray, bytes, callable, chr, copy, deepcopy, delattr, dict, dir, divmod, enumerate, filter, float, getattr, hasattr, input, int, isinstance, issubclass, len, list, map, max, min, object, ord, pow, print, property, py_TypeError, py_iter, py_metatype, py_next, py_reversed, py_typeof, range, repr, round, set, setattr, sorted, str, sum, tuple, zip} from './org.transcrypt.__runtime__.js';
 import {WHITE} from './board.js';
@@ -18,7 +18,7 @@ export var MAX_SCORE = 1000000;
 export var THINK_TIME = 2 * 1000;
 export var DISPLAY_TIME = 3 * 1000;
 export var HIGHLIGHT_TIME = 1 * 1000;
-export var DEBUG = false;
+export var DEBUG = true;
 export var ReversiScene =  __class__ ('ReversiScene', [Scene], {
 	__module__: __name__,
 	get __init__ () {return __get__ (this, function (self, game, py_name) {
@@ -29,7 +29,7 @@ export var ReversiScene =  __class__ ('ReversiScene', [Scene], {
 		self.padding = 8;
 		self.px = 10;
 		self.py = 20;
-		self.eval_function = eval_functions.F1 ();
+		self.eval_function = eval_functions.F1 (1, 10, 10, -(10), -(10), 100);
 		self.game_state = WHITE_TO_MOVE_STATE;
 		self._hoverX = null;
 		self._hoverY = null;
