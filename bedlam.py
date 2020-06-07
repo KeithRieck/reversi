@@ -2,21 +2,26 @@
 # It is based, very loosely, on Phaser (see https://phaser.io).
 # Copyright (c) 2020, Keith Rieck
 
+
 # __pragma__('skip')
+from typing import Optional, List, Dict
+
 document = window = Math = Date = console = 0  # Prevent complaints by optional static checker
+
+
 # __pragma__('noskip')
+
 # __pragma__('noalias', 'clear')
 
-
-def _in_browser():
+def _in_browser() -> bool:
     return document != 0
 
 
-def _hash_name(obj):
+def _hash_name(obj) -> str:
     if _in_browser():
         return str(obj)
     else:
-        return hash(obj)
+        return str(hash(obj))
 
 
 class GameObject:
@@ -29,7 +34,7 @@ class GameObject:
         self.enabled = True
         self.name = None
 
-    def update(self, delta_time):
+    def update(self, delta_time: float):
         pass
 
     def draw(self, ctx):
@@ -40,7 +45,8 @@ class Button(GameObject):
     """
     Button on a Scene that can execute a callback function.
     """
-    def __init__(self, game, x, y, width, height, buttonText, name=None):
+
+    def __init__(self, game, x: int, y: int, width: int, height: int, button_text: str, name: Optional[str] = None):
         GameObject.__init__(self, game)
         self.name = name if name is not None else _hash_name(self)
         self.x = x
@@ -48,7 +54,7 @@ class Button(GameObject):
         self.width = width
         self.height = height
         self.pad = 5
-        self.buttonText = buttonText
+        self.buttonText = button_text
         self.font = '18pt sans-serif'
         self.fillStyle = 'white'
         self.textStyle = 'black'
@@ -58,11 +64,11 @@ class Button(GameObject):
         self.callback = None
         self._clicked = False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Button(%s,%r,%r, %r,%r, '%s', '%s')" \
                % (self.game, self.x, self.y, self.width, self.height, self.buttonText, self.name)
 
-    def _in_rect(self, x, y):
+    def _in_rect(self, x: int, y: int) -> bool:
         return not (x < self.x or x > self.x + self.width
                     or y < self.y or y > self.y + self.height)
 
@@ -75,7 +81,7 @@ class Button(GameObject):
             self.callback()
         self._clicked = False
 
-    def update(self, delta_time):
+    def update(self, delta_time: float):
         pass
 
     def draw(self, ctx):
@@ -101,7 +107,7 @@ class Sprite(GameObject):
     A sprite has an x,y location and also width and height.
     """
 
-    def __init__(self, game, width, height, name=None):
+    def __init__(self, game, width: int, height: int, name: Optional[str] = None):
         GameObject.__init__(self, game)
         self.name = name if name is not None else _hash_name(self)
         self.x = 0
@@ -109,14 +115,41 @@ class Sprite(GameObject):
         self.width = width
         self.height = height
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Sprite(%s, %r,%r, '%s')" % (self.game, self.width, self.height, self.name)
 
-    def update(self, delta_time):
+    def intersects_with(self, x: int, y: int) -> bool:
+        if x < self.x or x > self.x + self.width or y > self.y + self.height or y < self.y:
+            return False
+        return True
+
+    def collides_with(self, sprite) -> bool:
+        if self.x + self.width < sprite.x or self.x > sprite.x + sprite.width \
+                or self.y + self.height < sprite.y or self.y > sprite.y + sprite.height:
+            return False
+        return True
+
+    def update(self, delta_time: float) -> str:
         pass
 
     def draw(self, ctx):
         pass
+
+
+class ImageSprite(Sprite):
+    """
+    Base Sprite object that draws an Image object onto a game canvas.
+    """
+    def __init__(self, game, width: int, height: int, image, name: Optional[str] = None):
+        Sprite.__init__(self, game, width, height, name)
+        self.image = image
+
+    def draw(self, ctx):
+        Sprite.draw(self, ctx)
+        ctx.save()
+        ctx.globalCompositeOperation = 'source-over'
+        ctx.drawImage(self.image, self.x, self.y)
+        ctx.restore()
 
 
 class Scene(GameObject):
@@ -125,10 +158,10 @@ class Scene(GameObject):
     A Scene is a container of GameObjects.
     """
 
-    def __init__(self, game, name=None):
+    def __init__(self, game, name: Optional[str] = None):
         GameObject.__init__(self, game)
         self.name = name if name is not None else _hash_name(self)
-        self.children = []
+        self.children: List[GameObject] = []
 
     def __repr__(self):
         return "Scene(%s, '%s')" % (self.game, self.name)
@@ -136,13 +169,13 @@ class Scene(GameObject):
     def __len__(self):
         return len(self.children)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int):
         return self.children[key]
 
-    def __setitem__(self, key, gameobject):
+    def __setitem__(self, key: int, gameobject: GameObject):
         self.children[key] = gameobject
 
-    def __contains__(self, gameobject):
+    def __contains__(self, gameobject: GameObject) -> bool:
         return gameobject in self.children
 
     def __iter__(self):
@@ -166,7 +199,7 @@ class Scene(GameObject):
         self.children.append(gameobject)
         return gameobject
 
-    def update(self, delta_time):
+    def update(self, delta_time: float):
         for gameobject in self.children:
             gameobject.update(delta_time)
 
@@ -188,7 +221,7 @@ class Game:
     A Game is a container of Scenes.
     """
 
-    def __init__(self, name=None, loop_time=20):
+    def __init__(self, name: str = None, loop_time: int = 20):
         self.name = name if name is not None else _hash_name(self)
         if _in_browser():
             self.canvasFrame = document.getElementById('canvas_frame')
@@ -198,23 +231,23 @@ class Game:
         else:
             self.canvasFrame = None
             self.canvas = None
-        self.scenes = {}
-        self.currentScene = None
+        self.scenes: Dict[str, Scene] = {}
+        self.currentScene: Optional[Scene] = None
         self._loop_time = loop_time
 
     def __get_context(self):
         return self.canvas.getContext('2d')
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Game('%s')" % self.name
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.scenes)
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> Scene:
         return self.scenes[name]
 
-    def __setitem__(self, name, scene):
+    def __setitem__(self, name: str, scene: Scene):
         self.scenes[name] = scene
         if self.currentScene is None:
             self.currentScene = scene
@@ -257,10 +290,14 @@ class Game:
     def set_current_scene(self, name):
         self.currentScene = self.scenes[name]
 
-    def get_time(self):
+    def get_time(self) -> float:
         return Date.now()
 
-    def update(self, delta_time):
+    def load_image(self, image_id):
+        ctx = self.__get_context()
+        return document.getElementById(image_id)
+
+    def update(self, delta_time: float):
         if self.currentScene is not None:
             self.currentScene.update(delta_time)
 
@@ -284,4 +321,4 @@ class Game:
         delta_time = current_time - self._prev_time
         self.update(delta_time)
         self.draw(ctx)
-        self._prev_time = current_time
+        self._prev_time = self.get_time()

@@ -18,8 +18,8 @@ MIN_SCORE = -1000000
 MAX_SCORE = 1000000
 THINK_TIME = 2 * 1000
 DISPLAY_TIME = 3 * 1000
-HIGHLIGHT_TIME = 1 * 1000
-DEBUG = True
+HIGHLIGHT_TIME = 4 * 1000
+DEBUG = False
 
 
 class ReversiScene(Scene):
@@ -31,7 +31,8 @@ class ReversiScene(Scene):
         self.padding = 8
         self.px = 10
         self.py = 20
-        self.eval_function = eval_functions.F1(1, 10, 10, -10, -10, 100)
+        self.eval_function = eval_functions.F1()
+        # self.eval_function = eval_functions.F2()
         self.game_state = WHITE_TO_MOVE_STATE
         self._hoverX = None
         self._hoverY = None
@@ -46,11 +47,11 @@ class ReversiScene(Scene):
         self.reset_button = self.append(Button(self.game, 9 * r, 8 * r, 75, 30, 'Reset'))
         self.reset_button.callback = self.__reset_game
 
-    def set_current_board(self, board):
+    def set_current_board(self, board: Board):
         self.current_board = board
         self.game_state = WHITE_TO_MOVE_STATE
 
-    def __find_cell(self, mouse_x, mouse_y):
+    def __find_cell(self, mouse_x: int, mouse_y: int):
         r = 2 * self.radius + 2 * self.padding
         x = Math.floor((mouse_x - self.px - self.padding) / r)
         y = Math.floor((mouse_y - self.py - self.padding) / r)
@@ -94,7 +95,8 @@ class ReversiScene(Scene):
             self._highlight_until = self.game.get_time() + HIGHLIGHT_TIME
         else:
             if DEBUG:
-                console.log('PASS: ' + self.current_board.next_player())
+                console.log('PASS: ' + self.current_board.next_player()
+                            + ' consecutive_passes=' + self._consecutive_passes)
             self.__display_message('PASS: ' + self.current_board.next_player())
             self.current_board.switch_player()
             self._consecutive_passes = self._consecutive_passes + 1
@@ -109,7 +111,7 @@ class ReversiScene(Scene):
             console.log('State = ' + self.game_state)
             console.log('- - - - - - - - - - - - - \n\n')
 
-    def __display_message(self, message):
+    def __display_message(self, message: str):
         self._display_until = self.game.get_time() + DISPLAY_TIME
         self._display = message
 
@@ -193,8 +195,11 @@ class ReversiScene(Scene):
             best_move = self.__search_for_best_move(self.current_board)
             if best_move is not None:
                 self.__make_move(best_move)
+        else:
+            if self.current_board.move_count() == 0:
+                self.__make_move(None)
 
-    def __search_for_best_move(self, board):
+    def __search_for_best_move(self, board: Board):
         move = board.next_pending_move(self.target_depth)
         if move is not None:
             if move.board is None:
@@ -205,7 +210,7 @@ class ReversiScene(Scene):
         else:
             return board.best_move()
 
-    def __search(self, board, depth=0, alpha=MIN_SCORE, beta=MAX_SCORE):
+    def __search(self, board: Board, depth: int = 0, alpha: int = MIN_SCORE, beta: int = MAX_SCORE) -> int:
         if depth <= 0:
             return self.eval_function.eval_board(board)
         if board.move_count() == 0:
