@@ -49,10 +49,9 @@ class BoardProcessor:
         vector = self.eval_function.eval_vector(board)
         for v in vector:
             new_csv = new_csv + str(v) + ','
-        new_csv = new_csv + str(self.eval_function.eval_board(board))
         for depth in range(0, max_depth + 1, 2):
             score = self.eval_board(board, depth)
-            new_csv = new_csv + ',' + str(score)
+            new_csv = new_csv + str(score) + ','
         total_time = time.time() - start_time
         if DEBUG:
             print('%r \t : total_time=%.2f' % (board.__hash__(), total_time))
@@ -65,9 +64,10 @@ def main(argv=None):
     output_file_name = argv[3] if argv is not None and len(argv) > 3 else 'processed.csv'
 
     header_csv = 'ID,move,player'
-    for n in range(64):
-        header_csv = header_csv + ','
-    header_csv = header_csv + ',p0,g1,g2,b3,b4,pm,score_0'
+    for x in range(8):
+        for y in range(8):
+            header_csv = header_csv + ',d' + str(x) + str(y)
+    header_csv = header_csv + ',p0,g1,g2,b3,b4,b5,g6,b7,g8,pm'
     for depth in range(0, max_depth + 1, 2):
         header_csv = header_csv + ',score_' + str(depth)
 
@@ -80,11 +80,11 @@ def main(argv=None):
                 if csv.startswith('ID') or len(csv.strip()) == 0:
                     continue
                 board = Board(csv=csv)
-                if board.move_number < 5 or board.move_number > 55:
+                if board.move_number < 5 or board.move_number > 58:
                     continue
                 new_csv = processor.eval_csv(csv, max_depth)
                 output_file.write(new_csv + '\n')
-        output_file.flush()
+                output_file.flush()
 
     total_time = time.time() - start_time
     if DEBUG:

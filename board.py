@@ -1,10 +1,11 @@
+
 BLACK = "BLACK"
 WHITE = "WHITE"
 
 
 class Move:
 
-    def __init__(self, player=WHITE, x=0, y=0):
+    def __init__(self, player: str = WHITE, x: int = 0, y: int = 0):
         self.x = x
         self.y = y
         self.player = player
@@ -18,11 +19,11 @@ class Move:
 
 class Board:
 
-    def __init__(self, previous_board=None, move=None, csv=None):
+    def __init__(self, previous_board=None, move: Move= None, csv: str = None):
         self._player = WHITE
         self.move_number = 1
         self._p = []
-        self._r = []
+        self._r= []
         self._moves = []
         for x in range(8):
             self._p.append([])
@@ -93,7 +94,7 @@ class Board:
                     h = (h + m) % 4294967296
         return h
 
-    def _board_char(self, x, y):
+    def _board_char(self, x: int, y: int) -> str:
         if self._p[x][y] is None:
             return '*' if self.is_move(x, y) else '.'
         if self._r[x][y]:
@@ -111,16 +112,16 @@ class Board:
                     n = n + 1
         return n
 
-    def move_count(self):
+    def move_count(self) -> int:
         return len(self._moves)
 
-    def get_move(self, n):
+    def get_move(self, n: int) -> Move:
         return self._moves[n]
 
     def get_moves(self):
         return self._moves
 
-    def apply_move(self, move):
+    def apply_move(self, move: Move):
         self._p[move.x][move.y] = move.player
         self._player = WHITE if move.player == BLACK else BLACK
         self._move_down(move.player, move.x, move.y, True)
@@ -133,7 +134,7 @@ class Board:
         self._move_up_left(move.player, move.x, move.y, True)
         self._calc_perm()
 
-    def is_move(self, x, y):
+    def is_move(self, x: int, y: int) -> Move:
         if x < 0 or x > 8 or y < 0 or y > 8:
             return None
         for move in self._moves:
@@ -141,7 +142,7 @@ class Board:
                 return move
         return None
 
-    def next_pending_move(self, target_depth=0):
+    def next_pending_move(self, target_depth: int = 0) -> Move:
         for move in self._moves:
             if move.board is None:
                 # move.board = Board(self, move)
@@ -151,7 +152,7 @@ class Board:
                 return move
         return None
 
-    def best_move(self):
+    def best_move(self) -> Move:
         if len(self._moves) == 0:
             return None
         self.sort_moves()
@@ -160,12 +161,12 @@ class Board:
     def sort_moves(self):
         self._moves.sort(key=lambda m: m.score)
 
-    def is_piece(self, x, y):
+    def is_piece(self, x: int, y: int) -> str:
         if x is None or y is None or x < 0 or x > 8 or y < 0 or y > 8:
             return None
         return self._p[x][y]
 
-    def count(self, player):
+    def count(self, player: str) -> int:
         n = 0
         for x in range(8):
             for y in range(8):
@@ -173,10 +174,10 @@ class Board:
                     n = n + 1
         return n
 
-    def next_player(self):
+    def next_player(self) -> str:
         return self._player
 
-    def switch_player(self):
+    def switch_player(self) -> str:
         self._player = BLACK if self._player == WHITE else WHITE
         self.__calculate_moves()
         self._calc_perm()
@@ -198,7 +199,7 @@ class Board:
             print(s)
         print()
 
-    def csv_line(self):
+    def csv_line(self) -> str:
         s = str(self.__hash__()) + ',' + str(self.move_number) + ','
         s = s + ('W' if self._player == WHITE else 'B') + ','
         for y in range(8):
@@ -250,34 +251,34 @@ class Board:
                         self._r[x][y] = True
                         done = False
 
-    def is_permanent(self, player, x, y):
+    def is_permanent(self, player: str, x: int, y: int) -> bool:
         return self._p[x][y] == player and self._r[x][y]
 
-    def _perm_left(self, player, x, y):
+    def _perm_left(self, player: str, x: int, y: int) -> bool:
         for xx in range(x + 1):
             if self._p[xx][y] != player:
                 return False
         return True
 
-    def _perm_right(self, player, x, y):
+    def _perm_right(self, player: str, x: int, y: int) -> bool:
         for xx in range(x, 8):
             if self._p[xx][y] != player:
                 return False
         return True
 
-    def _perm_up(self, player, x, y):
+    def _perm_up(self, player: str, x: int, y: int) -> bool:
         for yy in range(y + 1):
             if self._p[x][yy] != player:
                 return False
         return True
 
-    def _perm_down(self, player, x, y):
+    def _perm_down(self, player: str, x: int, y: int) -> bool:
         for yy in range(y, 8):
             if self._p[x][yy] != player:
                 return False
         return True
 
-    def _move_down(self, player, x, y, do_move=False):
+    def _move_down(self, player: str, x: int, y: int, do_move: bool = False) -> int:
         other_player = WHITE if player == BLACK else BLACK
         n = 0
         while (y + (n + 1)) < 8 and self._p[x][y + (n + 1)] == other_player:
@@ -290,7 +291,7 @@ class Board:
         else:
             return 0
 
-    def _move_up(self, player, x, y, do_move=False):
+    def _move_up(self, player: str, x: int, y: int, do_move: bool = False) -> int:
         other_player = WHITE if player == BLACK else BLACK
         n = 0
         while (y - (n + 1)) >= 0 and self._p[x][y - (n + 1)] == other_player:
@@ -303,7 +304,7 @@ class Board:
         else:
             return 0
 
-    def _move_right(self, player, x, y, do_move=False):
+    def _move_right(self, player: str, x: int, y: int, do_move: bool = False) -> int:
         other_player = WHITE if player == BLACK else BLACK
         n = 0
         while (x + (n + 1)) < 8 and self._p[x + (n + 1)][y] == other_player:
@@ -316,7 +317,7 @@ class Board:
         else:
             return 0
 
-    def _move_left(self, player, x, y, do_move=False):
+    def _move_left(self, player: str, x: int, y: int, do_move: bool = False) -> int:
         other_player = WHITE if player == BLACK else BLACK
         n = 0
         while (x - (n + 1)) >= 0 and self._p[x - (n + 1)][y] == other_player:
@@ -329,7 +330,7 @@ class Board:
         else:
             return 0
 
-    def _move_down_right(self, player, x, y, do_move=False):
+    def _move_down_right(self, player: str, x: int, y: int, do_move: bool = False) -> int:
         other_player = WHITE if player == BLACK else BLACK
         n = 0
         while (y + (n + 1)) < 8 and (x + (n + 1)) < 8 and self._p[x + (n + 1)][y + (n + 1)] == other_player:
@@ -342,7 +343,7 @@ class Board:
         else:
             return 0
 
-    def _move_down_left(self, player, x, y, do_move=False):
+    def _move_down_left(self, player: str, x: int, y: int, do_move: bool = False) -> int:
         other_player = WHITE if player == BLACK else BLACK
         n = 0
         while (y + (n + 1)) < 8 and (x - (n + 1)) >= 0 and self._p[x - (n + 1)][y + (n + 1)] == other_player:
@@ -355,7 +356,7 @@ class Board:
         else:
             return 0
 
-    def _move_up_right(self, player, x, y, do_move=False):
+    def _move_up_right(self, player: str, x: int, y: int, do_move: bool = False) -> int:
         other_player = WHITE if player == BLACK else BLACK
         n = 0
         while (y - (n + 1)) >= 0 and (x + (n + 1)) < 8 and self._p[x + (n + 1)][y - (n + 1)] == other_player:
@@ -368,7 +369,7 @@ class Board:
         else:
             return 0
 
-    def _move_up_left(self, player, x, y, do_move=False):
+    def _move_up_left(self, player: str, x: int, y: int, do_move: bool = False) -> int:
         other_player = WHITE if player == BLACK else BLACK
         n = 0
         while (y - (n + 1)) >= 0 and (x - (n + 1)) >= 0 and self._p[x - (n + 1)][y - (n + 1)] == other_player:

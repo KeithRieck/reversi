@@ -64,9 +64,10 @@ def main(argv=None):
 
     with open('data/%s' % output_file_name, 'w') as output_file:
         header_csv = 'ID,move,player'
-        for n in range(64):
-            header_csv = header_csv + ','
-        header_csv = header_csv + ',p0,g1,g2,b3,b4,pm,score_0'
+        for x in range(8):
+            for y in range(8):
+                header_csv = header_csv + ',d' + str(x) + str(y)
+        header_csv = header_csv + ',p0,g1,g2,b3,b4,b5,g6,b7,g8,pm,score_0'
         output_file.write(header_csv + '\n')
         board_set = {32, 33, 41, 57}
         for _ in range(game_count):
