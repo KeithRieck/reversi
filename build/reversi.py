@@ -19,6 +19,7 @@ MAX_SCORE = 1000000
 THINK_TIME = 2 * 1000
 DISPLAY_TIME = 3 * 1000
 HIGHLIGHT_TIME = 4 * 1000
+TARGET_DEPTH = 4
 DEBUG = False
 
 
@@ -26,13 +27,14 @@ class ReversiScene(Scene):
     def __init__(self, game, name):
         Scene.__init__(self, game, name)
         self.current_board = None
-        self.target_depth = 2
+        self.target_depth = TARGET_DEPTH
         self.radius = 20
         self.padding = 8
         self.px = 10
         self.py = 20
-        self.eval_function = eval_functions.F1()
+        # self.eval_function = eval_functions.F1()
         # self.eval_function = eval_functions.F2()
+        self.eval_function = eval_functions.F3()
         self.game_state = WHITE_TO_MOVE_STATE
         self._hoverX = None
         self._hoverY = None
