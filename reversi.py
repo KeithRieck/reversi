@@ -21,6 +21,7 @@ DISPLAY_TIME = 3 * 1000
 HIGHLIGHT_TIME = 4 * 1000
 TARGET_DEPTH = 4
 DEBUG = False
+VERSION = '2.0'
 
 
 class ReversiScene(Scene):
@@ -34,7 +35,7 @@ class ReversiScene(Scene):
         self.py = 20
         # self.eval_function = eval_functions.F1()
         # self.eval_function = eval_functions.F2()
-        self.eval_function = eval_functions.F3()
+        self.eval_function = eval_functions.F2()
         self.game_state = WHITE_TO_MOVE_STATE
         self._hoverX = None
         self._hoverY = None
@@ -48,6 +49,8 @@ class ReversiScene(Scene):
         r = 2 * self.radius + 2 * self.padding
         self.reset_button = self.append(Button(self.game, 9 * r, 8 * r, 75, 30, 'Reset'))
         self.reset_button.callback = self.__reset_game
+        self.tag1 = ''
+        self.tag2 = ''
 
     def set_current_board(self, board: Board):
         self.current_board = board
@@ -177,6 +180,10 @@ class ReversiScene(Scene):
             ctx.fillText(self._display, tx, ty)
             if self.game.get_time() > self._display_until:
                 self._display_until = -1
+        ctx.font = '10pt sans-serif'
+        ctx.fillText(self.tag1, 9 * r + 100, 8 * r + 10)
+        ctx.fillText(self.tag2, 9 * r + 130, 8 * r + 10)
+        ctx.fillText('v' + VERSION, 9 * r + 100, 8 * r + 27)
         ctx.restore()
 
     def draw(self, ctx):
@@ -238,3 +245,25 @@ class ReversiGame(Game):
         self.append(scene)
         b = Board()
         scene.set_current_board(b)
+
+    def set_debug(self, b):
+        global DEBUG
+        if b is not None and b == 'true':
+            DEBUG = True
+
+    def set_depth(self, n):
+        if n is not None:
+            self.currentScene.target_depth = int(n)
+            self.currentScene.tag2 = n
+
+    def set_version(self, n):
+        if n is not None:
+            if n == '0':
+                self.currentScene.eval_function = eval_functions.F0()
+                self.currentScene.tag1 = 'F0'
+            if n == '1':
+                self.currentScene.eval_function = eval_functions.F1()
+                self.currentScene.tag1 = 'F1'
+            if n == '2':
+                self.currentScene.eval_function = eval_functions.F2()
+                self.currentScene.tag1 = 'F2'
