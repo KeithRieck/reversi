@@ -1,4 +1,4 @@
-COMPILE_FLAGS=-b -m -n -ds
+COMPILE_FLAGS=-b -m -n
 DEPLOY_DIR=${HOME}/Sites/reversi
 
 build:    bedlam.py board.py eval_functions.py reversi.py

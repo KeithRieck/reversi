@@ -10,6 +10,10 @@
     import * as reversi from "./build/reversi.js";
     window.reversi = reversi;
     var app = new window.reversi.ReversiGame();
+    const urlParams = new URLSearchParams(window.location.search);
+    app.set_debug(urlParams.get('debug'))
+    app.set_depth(urlParams.get('d'))
+    app.set_version(urlParams.get('f'))
     app.start()
 </script>
 
