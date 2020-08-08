@@ -76,12 +76,12 @@ The [second version](https://keithrieck.github.io/transcrypt_reversi/?f=2) uses 
 to craft a better evaluation function.  I ran the program against itself to randomly generate
 boards, throwing out all boards from the beginning and end of the game.  This gave me a data
 set of unique boards from the middle of the games.  Then I evaluated each board with a search
-depth of four moves and the static evaluation function from version 1.
+depth of six moves and the static evaluation function from version 1.
 
-The result was a data set of 10,000 boards each of which was tagged with the searched values at
-zero, two, and four moves into the future.  On this data set, I applied the many correlation 
+The result was a data set of 100,000 boards each of which was tagged with the searched values at
+zero, two, four, and six moves into the future.  On this data set, I applied the many correlation 
 algorithms from [scikit-learn](https://scikit-learn.org/) attempting to find a better static
-evaluation function that might return the four-move value based on characteristics of the board.
+evaluation function that might return the six-move value based on characteristics of the board.
 
 The best function I have found so far was created by sklearn's 
 [DecisionTreeRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html). I 
