@@ -1,4 +1,4 @@
-// Transcrypt'ed from Python, 2020-12-14 20:33:49
+// Transcrypt'ed from Python, 2020-12-14 20:40:45
 import {AssertionError, AttributeError, BaseException, DeprecationWarning, Exception, IndexError, IterableError, KeyError, NotImplementedError, RuntimeWarning, StopIteration, UserWarning, ValueError, Warning, __JsIterator__, __PyIterator__, __Terminal__, __add__, __and__, __call__, __class__, __envir__, __eq__, __floordiv__, __ge__, __get__, __getcm__, __getitem__, __getslice__, __getsm__, __gt__, __i__, __iadd__, __iand__, __idiv__, __ijsmod__, __ilshift__, __imatmul__, __imod__, __imul__, __in__, __init__, __ior__, __ipow__, __irshift__, __isub__, __ixor__, __jsUsePyNext__, __jsmod__, __k__, __kwargtrans__, __le__, __lshift__, __lt__, __matmul__, __mergefields__, __mergekwargtrans__, __mod__, __mul__, __ne__, __neg__, __nest__, __or__, __pow__, __pragma__, __proxy__, __pyUseJsNext__, __rshift__, __setitem__, __setproperty__, __setslice__, __sort__, __specialattrib__, __sub__, __super__, __t__, __terminal__, __truediv__, __withblock__, __xor__, abs, all, any, assert, bool, bytearray, bytes, callable, chr, copy, deepcopy, delattr, dict, dir, divmod, enumerate, filter, float, getattr, hasattr, input, int, isinstance, issubclass, len, list, map, max, min, object, ord, pow, print, property, py_TypeError, py_iter, py_metatype, py_next, py_reversed, py_typeof, range, repr, round, set, setattr, sorted, str, sum, tuple, zip} from './org.transcrypt.__runtime__.js';
 var __name__ = 'bedlam';
 export var _in_browser = function () {
@@ -12,18 +12,85 @@ export var _hash_name = function (obj) {
 		return str (hash (obj));
 	}
 };
+export var GameTask =  __class__ ('GameTask', [object], {
+	__module__: __name__,
+	get __init__ () {return __get__ (this, function (self, game, gameobject, func, time_delay, repeat_count) {
+		if (typeof time_delay == 'undefined' || (time_delay != null && time_delay.hasOwnProperty ("__kwargtrans__"))) {;
+			var time_delay = 0;
+		};
+		if (typeof repeat_count == 'undefined' || (repeat_count != null && repeat_count.hasOwnProperty ("__kwargtrans__"))) {;
+			var repeat_count = 0;
+		};
+		self.game = game;
+		self.gameobject = gameobject;
+		self.func = func;
+		self.time_delay = time_delay;
+		self.repeat_count = repeat_count;
+		self.schedule_time = self.game.get_time () + self.time_delay;
+	});},
+	get reschedule () {return __get__ (this, function (self) {
+		self.schedule_time = self.game.get_time () + self.time_delay;
+		self.repeat_count = self.repeat_count - 1;
+	});},
+	get is_due () {return __get__ (this, function (self) {
+		return self.game.get_time () >= self.schedule_time;
+	});},
+	get run () {return __get__ (this, function (self) {
+		if (self.func !== null) {
+			self.func ();
+		}
+	});}
+});
 export var GameObject =  __class__ ('GameObject', [object], {
 	__module__: __name__,
 	get __init__ () {return __get__ (this, function (self, game) {
 		self.game = game;
 		self.enabled = true;
 		self.py_name = null;
+		self._sched_queue = [];
+	});},
+	get schedule () {return __get__ (this, function (self, func, time_delay, repeat_count) {
+		if (typeof time_delay == 'undefined' || (time_delay != null && time_delay.hasOwnProperty ("__kwargtrans__"))) {;
+			var time_delay = 0;
+		};
+		if (typeof repeat_count == 'undefined' || (repeat_count != null && repeat_count.hasOwnProperty ("__kwargtrans__"))) {;
+			var repeat_count = 0;
+		};
+		if (isinstance (func, GameTask)) {
+			self._sched_queue.append (func);
+		}
+		else {
+			self._sched_queue.append (GameTask (self.game, self, func, time_delay, repeat_count));
+		}
 	});},
 	get py_update () {return __get__ (this, function (self, delta_time) {
-		// pass;
+		self._run_schedule ();
 	});},
 	get draw () {return __get__ (this, function (self, ctx) {
 		// pass;
+	});},
+	get _run_schedule () {return __get__ (this, function (self) {
+		if (len (self._sched_queue) == 0) {
+			return ;
+		}
+		var new_queue = [];
+		var run_queue = [];
+		for (var task of self._sched_queue) {
+			if (task.is_due ()) {
+				run_queue.append (task);
+				if (task.repeat_count > 1) {
+					task.reschedule ();
+					new_queue.append (task);
+				}
+			}
+			else {
+				new_queue.append (task);
+			}
+		}
+		self._sched_queue = new_queue;
+		for (var task of run_queue) {
+			task.run ();
+		}
 	});}
 });
 export var Button =  __class__ ('Button', [GameObject], {
@@ -67,9 +134,10 @@ export var Button =  __class__ ('Button', [GameObject], {
 		self._clicked = false;
 	});},
 	get py_update () {return __get__ (this, function (self, delta_time) {
-		// pass;
+		GameObject.py_update (self, delta_time);
 	});},
 	get draw () {return __get__ (this, function (self, ctx) {
+		GameObject.draw (self, ctx);
 		ctx.save ();
 		ctx.globalCompositeOperation = 'source-over';
 		ctx.beginPath ();
@@ -109,10 +177,10 @@ export var Sprite =  __class__ ('Sprite', [GameObject], {
 		return !(self.x + self.width < sprite.x || self.x > sprite.x + sprite.width || self.y + self.height < sprite.y || self.y > sprite.y + sprite.height);
 	});},
 	get py_update () {return __get__ (this, function (self, delta_time) {
-		// pass;
+		GameObject.py_update (self, delta_time);
 	});},
 	get draw () {return __get__ (this, function (self, ctx) {
-		// pass;
+		GameObject.draw (self, ctx);
 	});}
 });
 export var ImageSprite =  __class__ ('ImageSprite', [Sprite], {
@@ -205,9 +273,15 @@ export var Scene =  __class__ ('Scene', [GameObject], {
 	});},
 	get append () {return __get__ (this, function (self, gameobject) {
 		self.children.append (gameobject);
+		gameobject.scene = self;
 		return gameobject;
 	});},
+	get remove () {return __get__ (this, function (self, gameobject) {
+		gameobject.scene = null;
+		self.children.remove (gameobject);
+	});},
 	get py_update () {return __get__ (this, function (self, delta_time) {
+		GameObject.py_update (self, delta_time);
 		for (var gameobject of self.children) {
 			gameobject.py_update (delta_time);
 		}
@@ -218,11 +292,15 @@ export var Scene =  __class__ ('Scene', [GameObject], {
 		ctx.clearRect (0, 0, self.game.canvas.width, self.game.canvas.height);
 		ctx.restore ();
 	});},
-	get draw () {return __get__ (this, function (self, ctx) {
-		self._clear_screen (ctx);
+	get _draw_children () {return __get__ (this, function (self, ctx) {
 		for (var gameobject of self.children) {
 			gameobject.draw (ctx);
 		}
+	});},
+	get draw () {return __get__ (this, function (self, ctx) {
+		GameObject.draw (self, ctx);
+		self._clear_screen (ctx);
+		self._draw_children (ctx);
 	});}
 });
 export var Game =  __class__ ('Game', [object], {
@@ -317,6 +395,9 @@ export var Game =  __class__ ('Game', [object], {
 	});},
 	get load_image () {return __get__ (this, function (self, image_id) {
 		return document.getElementById (image_id);
+	});},
+	get load_audio () {return __get__ (this, function (self, audio_id) {
+		return document.getElementById (audio_id);
 	});},
 	get py_update () {return __get__ (this, function (self, delta_time) {
 		if (self.currentScene !== null) {
