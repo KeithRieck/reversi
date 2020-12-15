@@ -1,4 +1,5 @@
 COMPILE_FLAGS=-b -m -n
+PYTHON_HOME=/usr/local/opt/python@3.8
 DEPLOY_DIR=${HOME}/Sites/reversi
 
 build:    bedlam.py board.py eval_functions.py reversi.py
@@ -15,6 +16,6 @@ deploy: build index.html LICENSE
 	cp LICENSE $(DEPLOY_DIR)
 
 setup:
-	virtualenv venv
+	virtualenv venv --python=${PYTHON_HOME}/bin/python3
 	venv/bin/python -m pip install transcrypt mypy
 	echo "Enter virtual environment with:  . venv/bin/activate"
