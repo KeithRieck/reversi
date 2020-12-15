@@ -24,6 +24,31 @@ def _hash_name(obj) -> str:
         return str(hash(obj))
 
 
+class GameTask:
+    """
+    Task that a GameObject may execute during its update cycle.
+    Every GameObject has a queue in which tasks can be scheduled.
+    """
+    def __init__(self, game, gameobject, func, time_delay=0, repeat_count=0):
+        self.game = game
+        self.gameobject = gameobject
+        self.func = func
+        self.time_delay = time_delay
+        self.repeat_count = repeat_count
+        self.schedule_time = self.game.get_time() + self.time_delay
+
+    def reschedule(self):
+        self.schedule_time = self.game.get_time() + self.time_delay
+        self.repeat_count = self.repeat_count - 1
+
+    def is_due(self):
+        return self.game.get_time() >= self.schedule_time
+
+    def run(self):
+        if self.func is not None:
+            self.func()
+
+
 class GameObject:
     """
     Abstract base class for all objects that can be drawn on a Game canvas.
@@ -33,12 +58,36 @@ class GameObject:
         self.game = game
         self.enabled = True
         self.name = None
+        self._sched_queue = []
+
+    def schedule(self, func, time_delay=0, repeat_count=0):
+        if isinstance(func, GameTask):
+            self._sched_queue.append(func)
+        else:
+            self._sched_queue.append(GameTask(self.game, self, func, time_delay, repeat_count))
 
     def update(self, delta_time: float):
-        pass
+        self._run_schedule()
 
     def draw(self, ctx):
         pass
+
+    def _run_schedule(self):
+        if len(self._sched_queue) == 0:
+            return
+        new_queue = []
+        run_queue = []
+        for task in self._sched_queue:
+            if task.is_due():
+                run_queue.append(task)
+                if task.repeat_count > 1:
+                    task.reschedule()
+                    new_queue.append(task)
+            else:
+                new_queue.append(task)
+        self._sched_queue = new_queue
+        for task in run_queue:
+            task.run()
 
 
 class Button(GameObject):
@@ -82,9 +131,10 @@ class Button(GameObject):
         self._clicked = False
 
     def update(self, delta_time: float):
-        pass
+        GameObject.update(self, delta_time)
 
     def draw(self, ctx):
+        GameObject.draw(self, ctx)
         ctx.save()
         ctx.globalCompositeOperation = 'source-over'
         ctx.beginPath()
@@ -127,10 +177,10 @@ class Sprite(GameObject):
                     or self.y + self.height < sprite.y or self.y > sprite.y + sprite.height)
 
     def update(self, delta_time: float) -> str:
-        pass
+        GameObject.update(self, delta_time)
 
     def draw(self, ctx):
-        pass
+        GameObject.draw(self, ctx)
 
 
 class ImageSprite(Sprite):
@@ -204,9 +254,15 @@ class Scene(GameObject):
 
     def append(self, gameobject):
         self.children.append(gameobject)
+        gameobject.scene = self
         return gameobject
 
+    def remove(self, gameobject):
+        gameobject.scene = None
+        self.children.remove(gameobject)
+
     def update(self, delta_time: float):
+        GameObject.update(self, delta_time)
         for gameobject in self.children:
             gameobject.update(delta_time)
 
@@ -216,10 +272,14 @@ class Scene(GameObject):
         ctx.clearRect(0, 0, self.game.canvas.width, self.game.canvas.height)
         ctx.restore()
 
-    def draw(self, ctx):
-        self._clear_screen(ctx)
+    def _draw_children(self, ctx):
         for gameobject in self.children:
             gameobject.draw(ctx)
+
+    def draw(self, ctx):
+        GameObject.draw(self, ctx)
+        self._clear_screen(ctx)
+        self._draw_children(ctx)
 
 
 class Game:
@@ -302,6 +362,9 @@ class Game:
 
     def load_image(self, image_id):
         return document.getElementById(image_id)
+
+    def load_audio(self, audio_id):
+        return document.getElementById(audio_id)
 
     def update(self, delta_time: float):
         if self.currentScene is not None:
