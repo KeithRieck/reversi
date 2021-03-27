@@ -1,9 +1,10 @@
+
+Hosted at: https://keithrieck.github.io/reversi/
+
 # Reversi
 
 This app plays [Reversi](https://en.wikipedia.org/wiki/Reversi). The code is all in [Python](https://www.python.org/), 
 but then compiled into JavaScript using [Transcrypt](https://transcrypt.org/).
-
-The game is hosted at: https://keithrieck.github.io/transcrypt_reversi/
 
 This app represents a modest combination of [Symbolic Artifical Intelligence](https://en.wikipedia.org/wiki/Symbolic_artificial_intelligence)
 and [Machine Learning](https://en.wikipedia.org/wiki/Machine_learning).
