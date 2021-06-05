@@ -10,11 +10,18 @@
     <link rel="manifest" href="site.webmanifest">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <link rel="mask-icon" href="safari-pinned-tab.svg" color="#5bbad5">
+    <script>
+		if ("serviceWorker" in navigator) {
+			window.addEventListener("load", () => {
+				navigator.serviceWorker && navigator.serviceWorker.register("./sw.js");
+			});
+		}
+    </script>
 </head>
 <body class="fullscreen">
 
 <div class="container">
-<canvas id="canvas" width="640" height="480"></canvas>
+    <canvas id="canvas" width="640" height="480"></canvas>
 </div>
 
 <script type="module">
@@ -26,6 +33,7 @@
     app.set_depth(urlParams.get('d'))
     app.set_version(urlParams.get('f'))
     app.start()
+
 </script>
 
 </body>
