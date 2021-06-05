@@ -1,4 +1,4 @@
-// Transcrypt'ed from Python, 2021-03-09 20:44:49
+// Transcrypt'ed from Python, 2021-06-04 21:00:36
 import {AssertionError, AttributeError, BaseException, DeprecationWarning, Exception, IndexError, IterableError, KeyError, NotImplementedError, RuntimeWarning, StopIteration, UserWarning, ValueError, Warning, __JsIterator__, __PyIterator__, __Terminal__, __add__, __and__, __call__, __class__, __envir__, __eq__, __floordiv__, __ge__, __get__, __getcm__, __getitem__, __getslice__, __getsm__, __gt__, __i__, __iadd__, __iand__, __idiv__, __ijsmod__, __ilshift__, __imatmul__, __imod__, __imul__, __in__, __init__, __ior__, __ipow__, __irshift__, __isub__, __ixor__, __jsUsePyNext__, __jsmod__, __k__, __kwargtrans__, __le__, __lshift__, __lt__, __matmul__, __mergefields__, __mergekwargtrans__, __mod__, __mul__, __ne__, __neg__, __nest__, __or__, __pow__, __pragma__, __proxy__, __pyUseJsNext__, __rshift__, __setitem__, __setproperty__, __setslice__, __sort__, __specialattrib__, __sub__, __super__, __t__, __terminal__, __truediv__, __withblock__, __xor__, abs, all, any, assert, bool, bytearray, bytes, callable, chr, copy, deepcopy, delattr, dict, dir, divmod, enumerate, filter, float, getattr, hasattr, input, int, isinstance, issubclass, len, list, map, max, min, object, ord, pow, print, property, py_TypeError, py_iter, py_metatype, py_next, py_reversed, py_typeof, range, repr, round, set, setattr, sorted, str, sum, tuple, zip} from './org.transcrypt.__runtime__.js';
 var __name__ = 'bedlam';
 export var _in_browser = function () {
@@ -375,6 +375,12 @@ export var Sprite =  __class__ ('Sprite', [GameObject], {
 		self.y = 0;
 		self.width = width;
 		self.height = height;
+		self.dx = 0;
+		self.dy = 0;
+		self.mass = 0;
+		self.bounce = 0;
+		self.num = 0;
+		self.at_rest = false;
 	});},
 	get __repr__ () {return __get__ (this, function (self) {
 		return __mod__ ("Sprite(%s, %r,%r, '%s')", tuple ([self.game, self.width, self.height, self.py_name]));
@@ -439,15 +445,105 @@ export var ImageSprite =  __class__ ('ImageSprite', [Sprite], {
 		}
 	});}
 });
+export var GamePhysics =  __class__ ('GamePhysics', [object], {
+	__module__: __name__,
+	get __init__ () {return __get__ (this, function (self, game, c_left, c_right, c_up, c_down) {
+		if (typeof c_left == 'undefined' || (c_left != null && c_left.hasOwnProperty ("__kwargtrans__"))) {;
+			var c_left = false;
+		};
+		if (typeof c_right == 'undefined' || (c_right != null && c_right.hasOwnProperty ("__kwargtrans__"))) {;
+			var c_right = false;
+		};
+		if (typeof c_up == 'undefined' || (c_up != null && c_up.hasOwnProperty ("__kwargtrans__"))) {;
+			var c_up = false;
+		};
+		if (typeof c_down == 'undefined' || (c_down != null && c_down.hasOwnProperty ("__kwargtrans__"))) {;
+			var c_down = false;
+		};
+		self.game = game;
+		self.collide_left = c_left;
+		self.collide_right = c_right;
+		self.collide_up = c_up;
+		self.collide_down = c_down;
+		self.children = [];
+	});},
+	get __len__ () {return __get__ (this, function (self) {
+		return len (self.children);
+	});},
+	get __getitem__ () {return __get__ (this, function (self, key) {
+		return self.children [key];
+	});},
+	get __setitem__ () {return __get__ (this, function (self, key, sprite) {
+		self.children [key] = sprite;
+	});},
+	get __contains__ () {return __get__ (this, function (self, sprite) {
+		return __in__ (sprite, self.children);
+	});},
+	get __iter__ () {return __get__ (this, function* (self) {
+		yield* self.children});},
+	[Symbol.iterator] () {return this.__iter__ ()},
+	get _calc_angle () {return __get__ (this, function (self, sprite1, sprite2) {
+		if (sprite1.y == sprite2.y) {
+			return (sprite1.x < sprite2.x ? 0.5 * Math.PI : -(0.5) * Math.PI);
+		}
+		var angle = Math.atan ((sprite1.x - sprite2.x) / (sprite1.y - sprite2.y));
+		if (sprite2.y < sprite1.y) {
+			var angle = angle + Math.PI;
+		}
+		if (angle > Math.PI) {
+			var angle = angle - 2 * Math.PI;
+		}
+		return angle;
+	});},
+	get append () {return __get__ (this, function (self, sprite) {
+		sprite.num = len (self.children);
+		self.children.append (sprite);
+		return sprite;
+	});},
+	get collide () {return __get__ (this, function (self, sprite1, sprite2, angle) {
+		// pass;
+	});},
+	get py_update () {return __get__ (this, function (self, delta_time) {
+		for (var sprite1 of self.children) {
+			for (var sprite2 of self.children) {
+				if (sprite1.num <= sprite2.num) {
+					continue;
+				}
+				if (sprite1.collides_with (sprite2)) {
+					var angle = self._calc_angle (sprite1, sprite2);
+					self.collide (sprite1, sprite2, angle);
+				}
+			}
+			if (self.collide_left && sprite1.x < 0) {
+				self.collide (sprite1, 'LEFT', 0);
+			}
+			else if (self.collide_right && sprite1.x + sprite1.width >= self.game.canvas.width) {
+				self.collide (sprite1, 'RIGHT', 0);
+			}
+			else if (self.collide_up && sprite1.y < 0) {
+				self.collide (sprite1, 'UP', 0);
+			}
+			else if (self.collide_down && sprite1.y + sprite1.height >= self.game.canvas.height) {
+				self.collide (sprite1, 'DOWN', 0);
+			}
+		}
+		// pass;
+	});}
+});
 export var Scene =  __class__ ('Scene', [GameObject], {
 	__module__: __name__,
-	get __init__ () {return __get__ (this, function (self, game, py_name) {
+	get __init__ () {return __get__ (this, function (self, game, py_name, physics) {
 		if (typeof py_name == 'undefined' || (py_name != null && py_name.hasOwnProperty ("__kwargtrans__"))) {;
 			var py_name = null;
+		};
+		if (typeof physics == 'undefined' || (physics != null && physics.hasOwnProperty ("__kwargtrans__"))) {;
+			var physics = null;
 		};
 		GameObject.__init__ (self, game);
 		self.py_name = (py_name !== null ? py_name : _hash_name (self));
 		self.children = [];
+		self.physics = physics;
+		self.background_color = null;
 	});},
 	get __repr__ () {return __get__ (this, function (self) {
 		return __mod__ ("Scene(%s, '%s')", tuple ([self.game, self.py_name]));
@@ -504,20 +600,35 @@ export var Scene =  __class__ ('Scene', [GameObject], {
 		gameobject.scene = self;
 		return gameobject;
 	});},
+	get extend () {return __get__ (this, function (self, container) {
+		for (var gameobject of container) {
+			self.children.append (gameobject);
+		}
+	});},
 	get remove () {return __get__ (this, function (self, gameobject) {
 		gameobject.scene = null;
 		self.children.remove (gameobject);
 	});},
 	get py_update () {return __get__ (this, function (self, delta_time) {
 		GameObject.py_update (self, delta_time);
+		if (self.physics !== null) {
+			self.physics.py_update (delta_time);
+		}
 		for (var gameobject of self.children) {
 			gameobject.py_update (delta_time);
 		}
 	});},
 	get _clear_screen () {return __get__ (this, function (self, ctx) {
 		ctx.save ();
-		ctx.globalCompositeOperation = 'destination-over';
-		ctx.clearRect (0, 0, self.game.canvas.width, self.game.canvas.height);
+		if (self.background_color !== null) {
+			ctx.globalCompositeOperation = 'copy';
+			ctx.fillStyle = self.background_color;
+			ctx.fillRect (0, 0, self.game.canvas.width, self.game.canvas.height);
+		}
+		else {
+			ctx.globalCompositeOperation = 'destination-over';
+			ctx.clearRect (0, 0, self.game.canvas.width, self.game.canvas.height);
+		}
 		ctx.restore ();
 	});},
 	get _draw_children () {return __get__ (this, function (self, ctx) {
