@@ -1,6 +1,6 @@
 # Bedlam is a trivial game framework.
 # It is based, very loosely, on Phaser (see https://phaser.io).
-# Copyright (c) 2020, Keith Rieck
+# Copyright (c) 2020,2021 Keith Rieck
 
 
 # __pragma__('skip')
@@ -324,6 +324,12 @@ class Sprite(GameObject):
         self.y = 0
         self.width = width
         self.height = height
+        self.dx = 0
+        self.dy = 0
+        self.mass = 0
+        self.bounce = 0
+        self.num = 0
+        self.at_rest = False
 
     def __repr__(self) -> str:
         return "Sprite(%s, %r,%r, '%s')" % (self.game, self.width, self.height, self.name)
@@ -380,16 +386,89 @@ class ImageSprite(Sprite):
             self.game_image.draw(ctx)
 
 
+class GamePhysics:
+    """
+    Base class for other physics engines.
+    Physics engines move sprites and handle collisions.
+    """
+
+    def __init__(self, game, c_left=False, c_right=False, c_up=False, c_down=False):
+        self.game = game
+        self.collide_left = c_left
+        self.collide_right = c_right
+        self.collide_up = c_up
+        self.collide_down = c_down
+        self.children = []
+
+    def __len__(self):
+        return len(self.children)
+
+    def __getitem__(self, key: int):
+        return self.children[key]
+
+    def __setitem__(self, key: int, sprite: Sprite):
+        self.children[key] = sprite
+
+    def __contains__(self, sprite: Sprite) -> bool:
+        return sprite in self.children
+
+    def __iter__(self) -> Sprite:
+        yield from self.children
+
+    def _calc_angle(self, sprite1: Sprite, sprite2: Sprite) -> float:
+        """
+        Calculate sprite collision angle in radians.
+        Straight up is 0 and Straight right is PI/2
+        Straight down is PI and straight left is -PI/2.
+        """
+        if sprite1.y == sprite2.y:
+            return 0.5 * Math.PI if sprite1.x < sprite2.x else -0.5 * Math.PI
+        angle = Math.atan((sprite1.x - sprite2.x) / (sprite1.y - sprite2.y))
+        if sprite2.y < sprite1.y:
+            angle = angle + Math.PI
+        if angle > Math.PI:
+            angle = angle - 2 * Math.PI
+        return angle
+
+    def append(self, sprite: Sprite) -> Sprite:
+        sprite.num = len(self.children)
+        self.children.append(sprite)
+        return sprite
+
+    def collide(self, sprite1: Sprite, sprite2, angle: float):
+        pass
+
+    def update(self, delta_time: float):
+        for sprite1 in self.children:
+            for sprite2 in self.children:
+                if sprite1.num <= sprite2.num:
+                    continue
+                if sprite1.collides_with(sprite2):
+                    angle = self._calc_angle(sprite1, sprite2)
+                    self.collide(sprite1, sprite2, angle)
+            if self.collide_left and sprite1.x < 0:
+                self.collide(sprite1, "LEFT", 0)
+            elif self.collide_right and (sprite1.x + sprite1.width) >= self.game.canvas.width:
+                self.collide(sprite1, "RIGHT", 0)
+            elif self.collide_up and sprite1.y < 0:
+                self.collide(sprite1, "UP", 0)
+            elif self.collide_down and (sprite1.y + sprite1.height) >= self.game.canvas.height:
+                self.collide(sprite1, "DOWN", 0)
+        pass
+
+
 class Scene(GameObject):
     """
     One scene to be displayed over the whole game canvas.
     A Scene is a container of GameObjects.
     """
 
-    def __init__(self, game, name: Optional[str] = None):
+    def __init__(self, game, name: Optional[str] = None, physics: GamePhysics = None):
         GameObject.__init__(self, game)
         self.name = name if name is not None else _hash_name(self)
         self.children: List[GameObject] = []
+        self.physics = physics
+        self.background_color = None
 
     def __repr__(self):
         return "Scene(%s, '%s')" % (self.game, self.name)
@@ -428,19 +507,30 @@ class Scene(GameObject):
         gameobject.scene = self
         return gameobject
 
+    def extend(self, container):
+        for gameobject in container:
+            self.children.append(gameobject)
+
     def remove(self, gameobject):
         gameobject.scene = None
         self.children.remove(gameobject)
 
     def update(self, delta_time: float):
         GameObject.update(self, delta_time)
+        if self.physics is not None:
+            self.physics.update(delta_time)
         for gameobject in self.children:
             gameobject.update(delta_time)
 
     def _clear_screen(self, ctx):
         ctx.save()
-        ctx.globalCompositeOperation = 'destination-over'
-        ctx.clearRect(0, 0, self.game.canvas.width, self.game.canvas.height)
+        if self.background_color is not None:
+            ctx.globalCompositeOperation = 'copy'
+            ctx.fillStyle = self.background_color
+            ctx.fillRect(0, 0, self.game.canvas.width, self.game.canvas.height)
+        else:
+            ctx.globalCompositeOperation = 'destination-over'
+            ctx.clearRect(0, 0, self.game.canvas.width, self.game.canvas.height)
         ctx.restore()
 
     def _draw_children(self, ctx):
