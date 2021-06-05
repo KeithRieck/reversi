@@ -15,7 +15,10 @@ deploy: build index.html LICENSE
 	cp -r build $(DEPLOY_DIR)
 	cp LICENSE $(DEPLOY_DIR)
 	cp *.png $(DEPLOY_DIR)
+	cp *.svg $(DEPLOY_DIR)
+	cp *.ico $(DEPLOY_DIR)
 	cp style.css $(DEPLOY_DIR)
+	cp site.webmanifest $(DEPLOY_DIR)
 
 setup:
 	virtualenv venv --python=${PYTHON_HOME}/bin/python3
