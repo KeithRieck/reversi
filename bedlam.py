@@ -282,11 +282,11 @@ class Button(GameObject):
                     or y < self.y or y > self.y + self.height)
 
     def handle_mousedown(self, event):
-        if self._in_rect(event.x, event.y) and self.enabled:
+        if self._in_rect(event.mouseX, event.mouseY) and self.enabled:
             self._clicked = True
 
     def handle_mouseup(self, event):
-        if self._clicked and self.callback is not None and self._in_rect(event.x, event.y) and self.enabled:
+        if self._clicked and self.callback is not None and self._in_rect(event.mouseX, event.mouseY) and self.enabled:
             self.callback()
         self._clicked = False
 
@@ -581,22 +581,26 @@ class Game:
             self.currentScene = scene
 
     def _preprocess_event(self, event):
-        if event.x:
-            return event.x, event.y
+        if event.mouseX:
+            return event.mouseX, event.mouseY
+        if event.clientX:
+            event.mouseX = event.clientX - self.canvas.offsetLeft
+            event.mouseY = event.clientY - self.canvas.offsetTop
+            return event.mouseX, event.mouseY
         if event.layerX:
-            event.x = event.layerX
-            event.y = event.layerY
-            return event.x, event.y
-        event.x = event.offsetX
-        event.y = event.offsetY
-        return event.x, event.y
+            event.mouseX = event.layerX
+            event.mouseY = event.layerY
+            return event.mouseX, event.mouseY
+        event.mouseX = event.offsetX
+        event.mouseY = event.offsetY
+        return event.mouseX, event.mouseY
 
     def __load_json(self, json_url):
         xhr = __new__(XMLHttpRequest())
         xhr.open('GET', json_url, False)
         xhr.send()
         if xhr.status != 200:
-            console.log("unable to load " + json_url)
+            console.log("unable to load {}".format(json_url))
             return None
         return JSON.parse(xhr.responseText)
 

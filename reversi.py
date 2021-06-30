@@ -69,7 +69,7 @@ class ReversiScene(Scene):
 
     def handle_mouseup(self, event):
         Scene.handle_mouseup(self, event)
-        x, y = self.__find_cell(event.x, event.y)
+        x, y = self.__find_cell(event.mouseX, event.mouseY)
         if DEBUG:
             console.log('click:  cell=' + x + ',' + y + '    ' + self.current_board.is_piece(x, y))
         if self.game_state == WHITE_TO_MOVE_STATE:
@@ -82,7 +82,7 @@ class ReversiScene(Scene):
     def handle_mousemove(self, event):
         Scene.handle_mousemove(self, event)
         if self.game_state == WHITE_TO_MOVE_STATE:
-            self._hoverX, self._hoverY = self.__find_cell(event.x, event.y)
+            self._hoverX, self._hoverY = self.__find_cell(event.mouseX, event.mouseY)
         else:
             self._hoverX, self._hoverY = None, None
 
