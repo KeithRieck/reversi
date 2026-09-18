@@ -16,7 +16,6 @@ html,
 .container {
   margin: auto;
   text-align: center;
-  touch-action: none;
 }
 
 .title {
